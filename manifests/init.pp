@@ -4,6 +4,7 @@ class dozendserver (
   # ---------------
   # setup defaults
 
+  $group_name = 'www-data',
   $with_memcache = false,
 
   # end of class arguments
@@ -33,7 +34,7 @@ class dozendserver (
         require => Exec['pre-install-disable-selinux'],
       }    
       # install zend web server after file
-      package { 'web-pack':
+      package { 'zend-web-pack':
         name => ['zend-server-ce-php-5.3'],
         ensure => 'present',
         require => File['zend-repo-file'],
@@ -42,7 +43,7 @@ class dozendserver (
 	  exec { 'zend-selinux-fix' :
         path => '/usr/bin:/bin:/usr/sbin',
         command => '/usr/local/zend/bin/zendctl.sh stop ; semanage port -a -t http_port_t -p tcp 10083 ; semanage port -m -t http_port_t -p tcp 10083 ; execstack -c /usr/local/zend/lib/apache2/libphp5.so /usr/local/zend/lib/libssl.so.0.9.8 /usr/lib64/libclntsh.so.11.1 /usr/lib64/libnnz11.so /usr/local/zend/lib/libcrypto.so.0.9.8 /usr/local/zend/lib/debugger/php-5.*.x/ZendDebugger.so /usr/local/zend/lib/php_extensions/curl.so ; chcon -R -t httpd_log_t /usr/local/zend/var/log ; chcon -R -t httpd_tmp_t /usr/local/zend/tmp ; chcon -R -t tmp_t /usr/local/zend/tmp/pagecache /usr/local/zend/tmp/datacache ; chcon -t textrel_shlib_t /usr/local/zend/lib/apache2/libphp5.so /usr/lib*/libclntsh.so.11.1 /usr/lib*/libociicus.so /usr/lib*/libnnz11.so ; setsebool -P httpd_can_network_connect 1 ; setenforce 1',
-	    require => Package['web-pack'],
+	    require => Package['zend-web-pack'],
 	    before => Service['zend-server-startup'],
 	  }
 	  # make log dir fix permanent to withstand a relabelling
@@ -56,7 +57,7 @@ class dozendserver (
 	  package { 'php-pecl-ssh' :
 	    name => ['php-pecl-ssh2'],
         ensure => 'present',
-        require => Package['web-pack'],
+        require => Package['zend-web-pack'],
         before => Service['zend-server-startup'],	  
 	  }
     }
@@ -80,7 +81,7 @@ class dozendserver (
         require => [Exec['zend-repo-key'], File['zend-repo-file']],
       }
       # finally install the package
-      package { 'web-pack':
+      package { 'zend-web-pack':
         name => ['zend-server-ce-php-5.3'],
         ensure => 'present',
         require => Exec['zend-repo-reflash'],
@@ -94,7 +95,7 @@ class dozendserver (
     changes => [
       'set date.timezone = Europe/London',
     ],
-    require => Package['web-pack'],
+    require => Package['zend-web-pack'],
     before => Service['zend-server-startup'],
   }
 
@@ -103,9 +104,50 @@ class dozendserver (
     package { 'zend-memcache-pack':
       ensure => 'present',
       name => ['php-5.3-memcache-zend-server', 'php-5.3-memcached-zend-server', 'memcached'],
-      require => Package['web-pack'],
+      require => Package['zend-web-pack'],
       before => Service['zend-server-startup'],
     }
+  }
+
+  # use apache module's params
+  include apache::params
+
+  # create web group without corresponding user
+  group { 'apache-web-group':
+    name => $group_name,
+    ensure => present,
+    gid => '5000',
+    # members is not supported on all platforms
+    # members => ['apache','zend'],
+    require => Package['zend-web-pack'],
+    before => Service['zend-server-startup'],
+  }
+  # make sure apache is a member of our new group
+  user { 'apache':
+    ensure => present,
+    groups => ['zend',"${group_name}"],
+    require => Package['zend-web-pack'],
+    before => Service['zend-server-startup'],
+  }
+  
+  # hack apache conf file (after apache module) to use our web-group
+  notify { "using ${apache::params::conf_dir}/${apache::params::conf_file} apache config file" : }
+  case $operatingsystem {
+    centos, redhat: {
+      $apache_conf_command = "sed -i 's/Group apache/Group ${group_name}/' ${apache::params::conf_dir}/${apache::params::conf_file}"
+      $apache_conf_if = "grep -c 'Group apache' ${apache::params::conf_dir}/${apache::params::conf_file}"
+    }
+    ubuntu, debian: {
+      $apache_conf_command = "sed -i 's/APACHE_RUN_GROUP=www-data/APACHE_RUN_GROUP=${group_name}/' /etc/${apache::params::apache_name}/envvars"
+      $apache_conf_if = "grep -c 'APACHE_RUN_GROUP=www-data' /etc/${apache::params::apache_name}/envvars"
+    }
+  }
+  exec { 'apache-web-group-hack' :
+    path => '/usr/bin:/bin:/sbin',
+    command => "$apache_conf_command",
+    onlyif  => $apache_conf_if,
+    require => Package['zend-web-pack'],
+    before => Service['zend-server-startup'],
   }
 
   # start zend server on startup
@@ -136,7 +178,7 @@ class dozendserver (
   file { 'zend-libpath-forall':
     name => '/etc/profile.d/zend.sh',
     source => 'puppet:///modules/dozendserver/zend.sh',
-    require => [Package['web-pack'],Package['php-command-line']],
+    require => [Package['zend-web-pack'],Package['php-command-line']],
   }
   # make the Dynamic Linker Run Time Bindings reread /etc/ld.so.conf.d
   exec { 'zend-ldconfig':
