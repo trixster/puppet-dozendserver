@@ -162,7 +162,7 @@ class dozendserver (
     require => Package['zend-web-pack'],
     before => Service['zend-server-startup'],
   }
-  
+
   # hack apache conf file (after apache module) to use our web-group
   notify { "using ${apache::params::conf_dir}/${apache::params::conf_file} apache config file" : }
   case $operatingsystem {
@@ -179,6 +179,16 @@ class dozendserver (
     path => '/usr/bin:/bin:/sbin',
     command => "$apache_conf_command",
     onlyif  => $apache_conf_if,
+    require => Package['zend-web-pack'],
+    before => Service['zend-server-startup'],
+  }
+
+  # setup hostname in apache httpd.conf
+  augeas { 'zend-apache-conf-hostname' :
+    context => "/files/${apache::params::conf_dir}/${apache::params::conf_file}",
+    changes => [
+      "set ServerName $fqdn",
+    ],
     require => Package['zend-web-pack'],
     before => Service['zend-server-startup'],
   }
