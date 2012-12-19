@@ -108,11 +108,18 @@ class dozendserver (
     }
   }
 
+  # remove redundant php.ini (/etc/php.ini)
+  file { '/etc/php.ini' :
+    ensure => absent,
+    require => Package['zend-web-pack'],
+    before => Service['zend-server-startup'],
+  }
+  
   # tweak settings in /usr/local/zend/etc/php.ini
   augeas { 'zend-php-ini' :
     context => '/usr/local/zend/etc/php.ini',
     changes => [
-      'set date.timezone = Europe/London',
+      'set date.timezone Europe/London',
     ],
     require => Package['zend-web-pack'],
     before => Service['zend-server-startup'],
