@@ -117,7 +117,7 @@ class dozendserver (
   
   # tweak settings in /usr/local/zend/etc/php.ini
   augeas { 'zend-php-ini' :
-    context => '/files/usr/local/zend/etc/php.ini',
+    context => '/files/usr/local/zend/etc/php.ini/PHP',
     changes => [
       'set date.timezone Europe/London',
     ],
