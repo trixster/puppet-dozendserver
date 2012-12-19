@@ -61,6 +61,13 @@ class dozendserver (
         require => Package['zend-web-pack'],
         before => Service['zend-server-startup'],	  
 	  }
+      # install mod SSL
+      package { 'apache-mod-ssl' :
+        name => ['mod_ssl'],
+        ensure => 'present',
+        require => Package['zend-web-pack'],
+        before => Service['zend-server-startup'],
+      }
     }
     ubuntu, debian: {
       # install key
@@ -87,6 +94,8 @@ class dozendserver (
         ensure => 'present',
         require => Exec['zend-repo-reflash'],
       }
+      # @todo find pecl-ssh2 package for ubuntu
+      # @todo find mod_ssl package for ubuntu
     }
   }
 
