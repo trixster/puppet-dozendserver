@@ -183,12 +183,10 @@ class dozendserver (
     before => Service['zend-server-startup'],
   }
 
-  # setup hostname in apache httpd.conf
-  augeas { 'zend-apache-conf-hostname' :
-    context => "/files/${apache::params::conf_dir}/${apache::params::conf_file}",
-    changes => [
-      "set ServerName $fqdn",
-    ],
+  # setup hostname in conf.d
+  file { 'zend-apache-conf-hostname' :
+    name => "/etc/${apache::params::apache_name}/conf.d/hostname.conf",
+    content => "ServerName ${fqdn}",
     require => Package['zend-web-pack'],
     before => Service['zend-server-startup'],
   }
