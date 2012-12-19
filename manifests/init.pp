@@ -54,12 +54,20 @@ class dozendserver (
 	    require => Exec['zend-selinux-fix'],
 	    before => Service['zend-server-startup'],
 	  }
-	  # install PECL extension for SSH
+	  # install PECL extensions for SSH and Memcache
 	  package { 'php-pecl-ssh' :
 	    name => ['php-pecl-ssh2'],
         ensure => 'present',
         require => Package['zend-web-pack'],
         before => Service['zend-server-startup'],	  
+	  }
+	  if ($with_memcache) {
+        package { 'php-pecl-memcache' :
+          name => ['php-pecl-memcache', 'php-pecl-memcached'],
+          ensure => 'present',
+          require => Package['zend-web-pack'],
+          before => Service['zend-server-startup'],     
+        }
 	  }
       # install mod SSL
       package { 'apache-mod-ssl' :
