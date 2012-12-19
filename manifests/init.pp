@@ -121,6 +121,7 @@ class dozendserver (
   if ($with_memcache == true) {
     package { 'zend-memcache-pack':
       ensure => 'present',
+      enable => true,
       name => ['php-5.3-memcache-zend-server', 'php-5.3-memcached-zend-server', 'memcached'],
       require => Package['zend-web-pack'],
       before => Service['zend-server-startup'],
