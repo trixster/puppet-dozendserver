@@ -186,7 +186,7 @@ class dozendserver (
   # setup hostname in conf.d
   file { 'zend-apache-conf-hostname' :
     name => "/etc/${apache::params::apache_name}/conf.d/hostname.conf",
-    content => "ServerName ${fqdn}",
+    content => "ServerName ${fqdn}\nNameVirtualHost *:80",
     require => Package['zend-web-pack'],
     before => Service['zend-server-startup'],
   }
@@ -200,16 +200,18 @@ class dozendserver (
   }
 
   # setup php command line (symlink to php in zend server)
-  file { "/usr/bin/php":
+  file { 'php-command-line':
+    name => '/usr/bin/php',
     ensure => 'link',
     target => '/usr/local/zend/bin/php',
+    require => Package['zend-web-pack'],
   }
 
   # setup paths for all users to zend libraries/executables
   file { 'zend-libpath-forall':
     name => '/etc/profile.d/zend.sh',
     source => 'puppet:///modules/dozendserver/zend.sh',
-    require => [Package['zend-web-pack'],Package['php-command-line']],
+    require => [Package['zend-web-pack'],File['php-command-line']],
   }
   # make the Dynamic Linker Run Time Bindings reread /etc/ld.so.conf.d
   exec { 'zend-ldconfig':
