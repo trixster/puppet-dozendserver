@@ -199,22 +199,12 @@ class dozendserver (
     require => Augeas['zend-php-ini'],
   }
 
-  # setup php command line (not included in zend server)
-  case $operatingsystem {
-    centos, redhat: {
-      package { 'php-command-line':
-        name => 'php-cli',
-        ensure => 'present',
-      }
-    }
-    ubuntu, debian: {
-      package { 'php-command-line':
-        name => 'php5-cli',
-        ensure => 'present',
-      }
-    }
+  # setup php command line (symlink to php in zend server)
+  file { "/usr/bin/php":
+    ensure => 'link',
+    target => '/usr/local/zend/bin/php',
   }
-  
+
   # setup paths for all users to zend libraries/executables
   file { 'zend-libpath-forall':
     name => '/etc/profile.d/zend.sh',
