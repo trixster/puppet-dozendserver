@@ -6,6 +6,13 @@ class dozendserver (
 
   $group_name = 'www-data',
   $with_memcache = false,
+  
+  # php.ini setting defaults
+  $php_timezone = 'Europe/London',
+  $php_memory_limit = '128M',
+  $php_post_max_size = '10M',
+  $php_upload_max_filesize = '10M',
+  $php_internal_encoding = 'UTF-8',
 
   # end of class arguments
   # ----------------------
@@ -118,11 +125,11 @@ class dozendserver (
   augeas { 'zend-php-ini' :
     context => '/files/usr/local/zend/etc/php.ini/PHP',
     changes => [
-      'set date.timezone Europe/London',
-      'set memory_limit 1024M',
-      'set post_max_size 20M',
-      'set upload_max_filesize 20M',
-      'set mbstring.internal_encoding UTF-8',
+      "set date.timezone ${php_timezone}",
+      "set memory_limit ${php_memory_limit}",
+      "set post_max_size ${php_post_max_size}",
+      "set upload_max_filesize ${php_upload_max_filesize}",
+      "set mbstring.internal_encoding ${php_internal_encoding}",
     ],
     require => Package['zend-web-pack'],
     before => Service['zend-server-startup'],
