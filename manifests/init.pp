@@ -54,12 +54,11 @@ class dozendserver (
       require => Exec['zend-selinux-fix'],
       before => Service['zend-server-startup'],
     }
-    # install PECL extensions for SSH and Memcache
-    package { 'php-pecl-ssh' :
-      name => ['php-pecl-ssh2'],
-        ensure => 'present',
-        require => Package['zend-web-pack'],
-        before => Service['zend-server-startup'],    
+    # install SSH2
+    package { 'php-5.3-ssh2-zend-server':
+      ensure => 'present',
+      require => Package['zend-web-pack'],
+      before => Service['zend-server-startup'],
     }
 # @todo remove this, so long as we get the pecl extensions with the 5.3-zend...
 #     if ($with_memcache) {
@@ -120,6 +119,10 @@ class dozendserver (
     context => '/files/usr/local/zend/etc/php.ini/PHP',
     changes => [
       'set date.timezone Europe/London',
+      'set memory_limit 1024M',
+      'set post_max_size 20M',
+      'set upload_max_filesize 20M',
+      'set mbstring.internal_encoding UTF-8',
     ],
     require => Package['zend-web-pack'],
     before => Service['zend-server-startup'],
