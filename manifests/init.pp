@@ -130,6 +130,7 @@ class dozendserver (
       "set post_max_size ${php_post_max_size}",
       "set upload_max_filesize ${php_upload_max_filesize}",
       "set mbstring.internal_encoding ${php_internal_encoding}",
+      "set apc.rfc1867 1", # enable the display of upload progress
     ],
     require => Package['zend-web-pack'],
     before => Service['zend-server-startup'],
