@@ -4,6 +4,7 @@ class dozendserver (
   # ---------------
   # setup defaults
 
+  $user = 'web',
   $group_name = 'www-data',
   $with_memcache = false,
   
@@ -222,6 +223,9 @@ class dozendserver (
   file { 'zend-libpath-forall':
     name => '/etc/profile.d/zend.sh',
     source => 'puppet:///modules/dozendserver/zend.sh',
+    owner => 'root',
+    group => 'root',
+    mode => 0644,
     require => [Package['zend-web-pack'],File['php-command-line']],
   }
   # make the Dynamic Linker Run Time Bindings reread /etc/ld.so.conf.d
@@ -230,4 +234,16 @@ class dozendserver (
     command => "bash -c 'source /etc/profile.d/zend.sh; ldconfig'",
     require => File['zend-libpath-forall'],
   }
+  # fix permissions on the /var/www/html directory (forced to root:root by apache)
+  $webfile = {
+    '/var/www/html' => {
+    },
+  }
+  $webfile_default = {
+    user => $user,
+    group => $group_name,
+    require => File['common-webroot'],
+  }
+  create_resources(docommon::stickydir, $webfile, $webfile_default)
+
 }
