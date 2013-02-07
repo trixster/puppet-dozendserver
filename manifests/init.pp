@@ -246,4 +246,6 @@ class dozendserver (
   }
   create_resources(docommon::stickydir, $webfile, $webfile_default)
 
+  # if we've got a message of the day, include SSH
+  @domotd::register { 'Apache(80)' : }
 }
