@@ -219,6 +219,14 @@ class dozendserver (
     require => Package['zend-web-pack'],
   }
 
+  # install PHP PEAR
+  include pear
+
+  # upgrade PEAR to 1.9.2+ so it can use pear.drush.org without complaint
+  pear::package { 'PEAR':
+    require => Package['zend-web-pack'],
+  }
+
   # setup paths for all users to zend libraries/executables
   file { 'zend-libpath-forall':
     name => '/etc/profile.d/zend.sh',

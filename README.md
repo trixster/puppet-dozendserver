@@ -3,6 +3,13 @@ dozendserver
 
 Zend Server setup for devopera puppet config
 
+Changelog
+---------
+
+2013-02-19 
+
+  * Included PEAR
+
 Copyright and License
 ---------------------
 
