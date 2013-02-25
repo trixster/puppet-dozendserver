@@ -6,6 +6,11 @@ Zend Server setup for devopera puppet config
 Changelog
 ---------
 
+2013-02-25
+
+  * Modified zendserver-selinux-fix to write notifier to parameterized ${notifier_dir}
+  * Converted selinux-fix to use && instead of ;
+
 2013-02-19 
 
   * Included PEAR
