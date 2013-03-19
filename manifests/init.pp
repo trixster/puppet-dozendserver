@@ -188,7 +188,7 @@ class dozendserver (
   # setup hostname in conf.d
   file { 'zend-apache-conf-hostname' :
     name => "/etc/${apache::params::apache_name}/conf.d/hostname.conf",
-    content => "ServerName ${fqdn}\nNameVirtualHost *:80",
+    content => "ServerName ${fqdn}\nNameVirtualHost *:80\n",
     require => Package['zend-web-pack'],
     before => Service['zend-server-startup'],
   }
