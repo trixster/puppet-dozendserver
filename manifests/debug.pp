@@ -12,11 +12,12 @@ class dozendserver::debug (
 
   # set apache/PHP to show errors
   augeas { 'zend-php-ini-display-errors' :
-    context => '/usr/local/zend/etc/php.ini',
+    context => '/files/usr/local/zend/etc/php.ini/PHP',
     changes => [
-     'set display_errors = On',
+     'set display_errors On',
     ],
     require => Package['zend-web-pack'],
     before => Service['zend-server-startup'],
   }
+
 }
