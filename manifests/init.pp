@@ -18,6 +18,9 @@ class dozendserver (
   # notifier dir for avoid repeat-runs
   $notifier_dir = '/etc/puppet/tmp',
 
+  # open up firewall ports
+  $firewall = true,
+
   # end of class arguments
   # ----------------------
   # begin class
@@ -243,6 +246,11 @@ class dozendserver (
     require => File['common-webroot'],
   }
   create_resources(docommon::stickydir, $webfile, $webfile_default)
+
+  # open up firewall ports 
+  if ($firewall) {
+    class { 'dozendserver::firewall' : }
+  }
 
   # if we've got a message of the day, include SSH
   @domotd::register { 'Apache(80)' : }

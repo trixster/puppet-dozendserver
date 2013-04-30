@@ -6,6 +6,10 @@ Zend Server setup for devopera puppet config
 Changelog
 ---------
 
+2013-04-30
+
+  * Moved firewall out to firewall.pp and over to example42 standard
+
 2013-02-25
 
   * Modified zendserver-selinux-fix to write notifier to parameterized ${notifier_dir}
