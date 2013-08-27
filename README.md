@@ -6,6 +6,10 @@ Zend Server setup for devopera puppet config
 Changelog
 ---------
 
+2013-08-27
+
+  * Changed firewall resources to use docommon::fireport alias, for compatibility with both puppetlabs/firewall and example42/iptables
+
 2013-04-30
 
   * Moved firewall out to firewall.pp and over to example42 standard

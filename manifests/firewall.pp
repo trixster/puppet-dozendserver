@@ -10,11 +10,11 @@ class dozendserver::firewall (
 
 ) {
 
-  @firewall { '00080 HTTP web service':
+  @docommon::fireport { '00080 HTTP web service':
     protocol => 'tcp',
     port     => '80',
   }
-  @firewall { '00443 HTTPS web service':
+  @docommon::fireport { '00443 HTTPS web service':
     protocol => 'udp',
     port     => '443',
   }

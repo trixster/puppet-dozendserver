@@ -14,6 +14,7 @@ class dozendserver (
   $php_post_max_size = '10M',
   $php_upload_max_filesize = '10M',
   $php_internal_encoding = 'UTF-8',
+  $php_session_gc_maxlifetime = '1440',
 
   # notifier dir for avoid repeat-runs
   $notifier_dir = '/etc/puppet/tmp',
@@ -125,7 +126,7 @@ class dozendserver (
     before => Service['zend-server-startup'],
   }
   
-  # tweak settings in /usr/local/zend/etc/php.ini
+  # tweak settings in /usr/local/zend/etc/php.ini [Main section]
   augeas { 'zend-php-ini' :
     context => '/files/usr/local/zend/etc/php.ini/PHP',
     changes => [
@@ -140,7 +141,17 @@ class dozendserver (
     before => Service['zend-server-startup'],
   }
 
-  # install memcache if set
+  # tweak settings in /usr/local/zend/etc/php.ini [Session section]
+  augeas { 'zend-php-ini-session' :
+    context => '/files/usr/local/zend/etc/php.ini/Session',
+    changes => [
+      "set session.gc_maxlifetime ${php_session_gc_maxlifetime}",
+    ],
+    require => Package['zend-web-pack'],
+    before => Service['zend-server-startup'],
+  }
+
+   # install memcache if set
   if ($with_memcache == true) {
     package { 'zend-memcache-pack':
       ensure => 'present',
@@ -160,41 +171,29 @@ class dozendserver (
   # use apache module's params
   include apache::params
 
-  # create web group without corresponding user
-  group { 'apache-web-group':
-    name => $group_name,
-    ensure => present,
-    gid => '5000',
-    # members is not supported on all platforms
-    # members => ['apache','zend'],
-    require => Package['zend-web-pack'],
-    before => Service['zend-server-startup'],
-  }
-  # make sure apache is a member of our new group
-  user { 'apache':
-    ensure => present,
-    groups => ['zend',"${group_name}"],
-    require => Package['zend-web-pack'],
-    before => Service['zend-server-startup'],
-  }
-
-  # hack apache conf file (after apache module) to use our web-group
-  notify { "using ${apache::params::conf_dir}/${apache::params::conf_file} apache config file" : }
+  # modify apache conf file (after apache module) to use our web $group_name and turn off ServerSignature
+  $signatureSed = "-i 's/ServerSignature On/ServerSignature Off/'"
   case $operatingsystem {
     centos, redhat: {
-      $apache_conf_command = "sed -i 's/Group apache/Group ${group_name}/' ${apache::params::conf_dir}/${apache::params::conf_file}"
+      $apache_conf_command = "sed -i 's/Group apache/Group ${group_name}/' ${signatureSed} ${apache::params::conf_dir}/${apache::params::conf_file}"
       $apache_conf_if = "grep -c 'Group apache' ${apache::params::conf_dir}/${apache::params::conf_file}"
     }
     ubuntu, debian: {
-      $apache_conf_command = "sed -i 's/APACHE_RUN_GROUP=www-data/APACHE_RUN_GROUP=${group_name}/' /etc/${apache::params::apache_name}/envvars"
+      $apache_conf_command = "sed -i 's/APACHE_RUN_GROUP=www-data/APACHE_RUN_GROUP=${group_name}/' ${signatureSed} /etc/${apache::params::apache_name}/envvars"
       $apache_conf_if = "grep -c 'APACHE_RUN_GROUP=www-data' /etc/${apache::params::apache_name}/envvars"
     }
   }
   exec { 'apache-web-group-hack' :
     path => '/usr/bin:/bin:/sbin',
     command => "$apache_conf_command",
-    onlyif  => $apache_conf_if,
+    # testing without onlyif statement, because sed should only replace if found
+    # onlyif  => $apache_conf_if,
     require => Package['zend-web-pack'],
+  }->
+  # create www-data group and give web/zend access to it
+  exec { 'apache-user-group-add' :
+    path => '/usr/bin:/usr/sbin',
+    command => "groupadd -f ${group_name} -g 5000 && gpasswd -M ${user},apache,zend ${group_name}",
     before => Service['zend-server-startup'],
   }
 
@@ -246,6 +245,7 @@ class dozendserver (
     require => File['zend-libpath-forall'],
   }
   # fix permissions on the /var/www/html directory (forced to root:root by apache)
+  # but only after we've created the web group ($group_name)
   $webfile = {
     '/var/www/html' => {
     },
@@ -253,7 +253,7 @@ class dozendserver (
   $webfile_default = {
     user => $user,
     group => $group_name,
-    require => File['common-webroot'],
+    require => [Exec['apache-user-group-add'], File['common-webroot']],
   }
   create_resources(docommon::stickydir, $webfile, $webfile_default)
 
