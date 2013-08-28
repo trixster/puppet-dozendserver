@@ -172,14 +172,14 @@ class dozendserver (
   include apache::params
 
   # modify apache conf file (after apache module) to use our web $group_name and turn off ServerSignature
-  $signatureSed = "-i 's/ServerSignature On/ServerSignature Off/'"
+  $signatureSed = "-e 's/ServerSignature On/ServerSignature Off/'"
   case $operatingsystem {
     centos, redhat: {
-      $apache_conf_command = "sed -i 's/Group apache/Group ${group_name}/' ${signatureSed} ${apache::params::conf_dir}/${apache::params::conf_file}"
+      $apache_conf_command = "sed -i -e 's/Group apache/Group ${group_name}/' ${signatureSed} ${apache::params::conf_dir}/${apache::params::conf_file}"
       $apache_conf_if = "grep -c 'Group apache' ${apache::params::conf_dir}/${apache::params::conf_file}"
     }
     ubuntu, debian: {
-      $apache_conf_command = "sed -i 's/APACHE_RUN_GROUP=www-data/APACHE_RUN_GROUP=${group_name}/' ${signatureSed} /etc/${apache::params::apache_name}/envvars"
+      $apache_conf_command = "sed -i -e 's/APACHE_RUN_GROUP=www-data/APACHE_RUN_GROUP=${group_name}/' ${signatureSed} /etc/${apache::params::apache_name}/envvars"
       $apache_conf_if = "grep -c 'APACHE_RUN_GROUP=www-data' /etc/${apache::params::apache_name}/envvars"
     }
   }
