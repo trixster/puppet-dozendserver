@@ -22,6 +22,9 @@ class dozendserver (
   # open up firewall ports
   $firewall = true,
 
+  # port only used for monitoring
+  $port = 80,
+
   # end of class arguments
   # ----------------------
   # begin class
@@ -263,5 +266,11 @@ class dozendserver (
   }
 
   # if we've got a message of the day, include SSH
-  @domotd::register { 'Apache(80)' : }
+  @domotd::register { "Apache(${port})" : }
+  
+  # if we're using monitoring, setup the check
+  @nagios::service { "http:${port}-dozendserver-${hostname}":
+    check_command => "http_port!${port}",
+  }
+
 }
