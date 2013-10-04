@@ -6,6 +6,10 @@ Zend Server setup for devopera puppet config
 Changelog
 ---------
 
+2013-10-04
+
+  * Extended ::dev manifest to open Zend Server firewall ports for debugger/console access
+
 2013-08-27
 
   * Changed firewall resources to use docommon::fireport alias, for compatibility with both puppetlabs/firewall and example42/iptables
