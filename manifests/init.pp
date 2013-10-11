@@ -19,8 +19,9 @@ class dozendserver (
   # notifier dir for avoid repeat-runs
   $notifier_dir = '/etc/puppet/tmp',
 
-  # open up firewall ports
+  # open up firewall ports and monitor
   $firewall = true,
+  $monitor = true,
 
   # port only used for monitoring
   $port = 80,
@@ -31,6 +32,21 @@ class dozendserver (
 
 ) {
 
+  # open up firewall ports and monitor
+  if ($firewall) {
+    class { 'dozendserver::firewall' :
+      port => $port, 
+    }
+  }
+  if ($monitor) {
+    class { 'dozendserver::monitor' : 
+      port => $port, 
+    }
+  }
+
+  # if we've got a message of the day, include
+  @domotd::register { "Apache(${port})" : }
+  
   # setup repos
   case $operatingsystem {
     centos, redhat: {
@@ -247,7 +263,7 @@ class dozendserver (
     command => "bash -c 'source /etc/profile.d/zend.sh && ldconfig'",
     require => File['zend-libpath-forall'],
   }
-  # fix permissions on the /var/www/html directory (forced to root:root by apache)
+  # fix permissions on the /var/www/html directory (forced to root:root by apache install)
   # but only after we've created the web group ($group_name)
   $webfile = {
     '/var/www/html' => {
@@ -259,18 +275,5 @@ class dozendserver (
     require => [Exec['apache-user-group-add'], File['common-webroot']],
   }
   create_resources(docommon::stickydir, $webfile, $webfile_default)
-
-  # open up firewall ports 
-  if ($firewall) {
-    class { 'dozendserver::firewall' : }
-  }
-
-  # if we've got a message of the day, include SSH
-  @domotd::register { "Apache(${port})" : }
-  
-  # if we're using monitoring, setup the check
-  @nagios::service { "http:${port}-dozendserver-${hostname}":
-    check_command => "http_port!${port}",
-  }
 
 }

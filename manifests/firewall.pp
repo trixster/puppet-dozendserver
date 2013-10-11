@@ -4,19 +4,27 @@ class dozendserver::firewall (
   # ---------------
   # setup defaults
 
+  $port = 80,
+  $port_https = 443,
+
   # end of class arguments
   # ----------------------
   # begin class
 
 ) {
 
-  @docommon::fireport { '00080 HTTP web service':
-    protocol => 'tcp',
-    port     => '80',
+  if ($port) {
+    @docommon::fireport { "000${port} HTTP web service":
+      protocol => 'tcp',
+      port     => $port,
+    }
   }
-  @docommon::fireport { '00443 HTTPS web service':
-    protocol => 'udp',
-    port     => '443',
+  
+  if ($port_https) {
+    @docommon::fireport { "00${port_https} HTTPS web service":
+      protocol => 'tcp',
+      port     => $port_https,
+    }
   }
-
+  
 }
