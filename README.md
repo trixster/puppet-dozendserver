@@ -6,6 +6,10 @@ Zend Server setup for devopera puppet config
 Changelog
 ---------
 
+2013-10-16
+
+  * Moved across to Zend Server 6.1, left default PHP as 5.3 but this can be changed to 5.4
+
 2013-10-04
 
   * Extended ::dev manifest to open Zend Server firewall ports for debugger/console access

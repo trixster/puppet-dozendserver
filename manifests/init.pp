@@ -7,6 +7,10 @@ class dozendserver (
   $user = 'web',
   $group_name = 'www-data',
   $with_memcache = false,
+
+  # by default work off the Zend Server (default) repo, option '6.1'
+  $server_version = undef,
+  $php_version = '5.3',
   
   # php.ini setting defaults
   $php_timezone = 'Europe/London',
@@ -67,23 +71,50 @@ class dozendserver (
       }
 
       # setup the zend repo file
+      if ($server_version != undef) {
+        $repo_version_insert = "${server_version}/"
+      } else {
+        $repo_version_insert = ''
+      }
       file { 'zend-repo-file':
         name => '/etc/yum.repos.d/zend.repo',
-        source => 'puppet:///modules/dozendserver/zend.rpm.repo',
+        content => template('dozendserver/zend.rpm.repo.erb'),
       }->  
       # install zend web server after file
       package { 'zend-web-pack':
-        name => ['zend-server-ce-php-5.3'],
+        name => ["zend-server-ce-php-${php_version}"],
         ensure => 'present',
       }
       
       if ($::selinux) {
         # stop zendserver, fix then re-enable SELinux
-        exec { 'zend-selinux-fix' :
+        exec { 'zend-selinux-fix-stop-do-ports' :
           path => '/usr/bin:/bin:/usr/sbin',
-          command => "/usr/local/zend/bin/zendctl.sh stop && semanage port -d -p tcp 10083 && semanage port -a -t http_port_t -p tcp 10083 && semanage port -m -t http_port_t -p tcp 10083 && execstack -c /usr/local/zend/lib/apache2/libphp5.so /usr/local/zend/lib/libssl.so.0.9.8 /usr/lib64/libclntsh.so.11.1 /usr/lib64/libnnz11.so /usr/local/zend/lib/libcrypto.so.0.9.8 /usr/local/zend/lib/debugger/php-5.*.x/ZendDebugger.so /usr/local/zend/lib/php_extensions/curl.so && chcon -R -t httpd_log_t /usr/local/zend/var/log && chcon -R -t httpd_tmp_t /usr/local/zend/tmp && chcon -R -t tmp_t /usr/local/zend/tmp/pagecache /usr/local/zend/tmp/datacache && chcon -t textrel_shlib_t /usr/local/zend/lib/apache2/libphp5.so /usr/lib*/libclntsh.so.11.1 /usr/lib*/libociicus.so /usr/lib*/libnnz11.so && setsebool -P httpd_can_network_connect 1 && setenforce 1 && touch ${notifier_dir}/puppet-dozendserver-selinux-fix",
+          command => '/usr/local/zend/bin/zendctl.sh stop && semanage port -d -p tcp 10083 && semanage port -a -t http_port_t -p tcp 10083 && semanage port -m -t http_port_t -p tcp 10083 && setsebool -P httpd_can_network_connect 1',
           creates => "${notifier_dir}/puppet-dozendserver-selinux-fix",
           require => Package['zend-web-pack'],
+        }
+        case $server_version {
+          5.6, undef: {
+            # only clean up files for Zend Server 5.x
+            exec { 'zend-selinux-fix-libs' :
+              path => '/usr/bin:/bin:/usr/sbin',
+              command => 'execstack -c /usr/local/zend/lib/apache2/libphp5.so /usr/local/zend/lib/libssl.so.0.9.8 /usr/lib64/libclntsh.so.11.1 /usr/lib64/libnnz11.so /usr/local/zend/lib/libcrypto.so.0.9.8 /usr/local/zend/lib/debugger/php-5.*.x/ZendDebugger.so /usr/local/zend/lib/php_extensions/curl.so && chcon -R -t httpd_log_t /usr/local/zend/var/log && chcon -R -t httpd_tmp_t /usr/local/zend/tmp && chcon -R -t tmp_t /usr/local/zend/tmp/pagecache /usr/local/zend/tmp/datacache && chcon -t textrel_shlib_t /usr/local/zend/lib/apache2/libphp5.so /usr/lib*/libclntsh.so.11.1 /usr/lib*/libociicus.so /usr/lib*/libnnz11.so',
+              creates => "${notifier_dir}/puppet-dozendserver-selinux-fix",
+              require => Exec['zend-selinux-fix-stop-do-ports'],
+              before => [Exec['zend-selinux-fix-start'], Service['zend-server-startup']],
+            }
+          }
+          6.0, 6.1: {
+            # no selinux cleanup specific to this version
+          }
+        }
+        # restart selinux
+        exec { 'zend-selinux-fix-start' :
+          path => '/usr/bin:/bin:/usr/sbin',
+          command => "setenforce 1 && touch ${notifier_dir}/puppet-dozendserver-selinux-fix",
+          creates => "${notifier_dir}/puppet-dozendserver-selinux-fix",
+          require => Exec['zend-selinux-fix-stop-do-ports'],
           before => Service['zend-server-startup'],
         }->
         # make log dir fix permanent to withstand a relabelling
@@ -95,7 +126,7 @@ class dozendserver (
       }
 
       # install SSH2
-      package { 'php-5.3-ssh2-zend-server':
+      package { "php-${php_version}-ssh2-zend-server":
         ensure => 'present',
         require => Package['zend-web-pack'],
         before => Service['zend-server-startup'],
@@ -129,7 +160,7 @@ class dozendserver (
       }
       # finally install the package
       package { 'zend-web-pack':
-        name => ['zend-server-ce-php-5.3'],
+        name => ["zend-server-ce-php-${php_version}"],
         ensure => 'present',
         require => Exec['zend-repo-reflash'],
       }
@@ -174,7 +205,7 @@ class dozendserver (
   if ($with_memcache == true) {
     package { 'zend-memcache-pack':
       ensure => 'present',
-      name => ['php-5.3-memcache-zend-server', 'php-5.3-memcached-zend-server', 'memcached'],
+      name => ["php-${php_version}-memcache-zend-server", "php-${php_version}-memcached-zend-server", 'memcached'],
       require => Package['zend-web-pack'],
       before => Service['zend-server-startup'],
     }
