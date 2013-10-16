@@ -10,6 +10,7 @@ class dozendserver (
 
   # by default work off the Zend Server (default) repo, option '6.1'
   $server_version = undef,
+  # by default, install php 5.3, option '5.4'
   $php_version = '5.3',
   
   # php.ini setting defaults
@@ -79,11 +80,10 @@ class dozendserver (
       file { 'zend-repo-file':
         name => '/etc/yum.repos.d/zend.repo',
         content => template('dozendserver/zend.rpm.repo.erb'),
-      }->  
-      # install zend web server after file
-      package { 'zend-web-pack':
-        name => ["zend-server-ce-php-${php_version}"],
-        ensure => 'present',
+      }
+      # make the package install dependent upon the reflash
+      Package <| title == 'zend-web-pack' |> {
+        require => File['zend-repo-file'],
       }
       
       if ($::selinux) {
@@ -126,7 +126,8 @@ class dozendserver (
       }
 
       # install SSH2
-      package { "php-${php_version}-ssh2-zend-server":
+      package { 'zend-install-ssh2-module':
+        name => ["php-${php_version}-ssh2-zend-server"],
         ensure => 'present',
         require => Package['zend-web-pack'],
         before => Service['zend-server-startup'],
@@ -158,15 +159,18 @@ class dozendserver (
         command => 'sudo apt-get update',
         require => [Exec['zend-repo-key'], File['zend-repo-file']],
       }
-      # finally install the package
-      package { 'zend-web-pack':
-        name => ["zend-server-ce-php-${php_version}"],
-        ensure => 'present',
+      # make the package install dependent upon the reflash
+      Package <| title == 'zend-web-pack' |> {
         require => Exec['zend-repo-reflash'],
       }
       # @todo find pecl-ssh2 package for ubuntu
       # @todo find mod_ssl package for ubuntu
     }
+  }
+  # install zend server
+  package { 'zend-web-pack':
+    name => ["zend-server-ce-php-${php_version}"],
+    ensure => 'present',
   }
 
   # remove redundant php.ini (/etc/php.ini)
