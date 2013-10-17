@@ -23,7 +23,7 @@ class dozendserver::monitor (
   if ($port_https) {
     # if we've named a secure port, setup the check against that port
     @nagios::service { "https:${port_https}-dozendserver-${::hostname}":
-      check_command => "check_https",
+      check_command => "check_https_nocert",
     }
   }
 
