@@ -107,6 +107,9 @@ class dozendserver (
           }
           6.0, 6.1: {
             # no selinux cleanup specific to this version
+            Exec <| title == 'zend-selinux-fix-libs' |> {
+              noop => true,
+            }
           }
         }
         # restart selinux
@@ -169,7 +172,7 @@ class dozendserver (
   }
   # install zend server
   package { 'zend-web-pack':
-    name => ["zend-server-ce-php-${php_version}"],
+    name => ["zend-server-php-${php_version}"],
     ensure => 'present',
   }
 
