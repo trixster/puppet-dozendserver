@@ -24,9 +24,10 @@ class dozendserver (
   # notifier dir for avoid repeat-runs
   $notifier_dir = '/etc/puppet/tmp',
 
-  # open up firewall ports and monitor
+  # open up firewall ports
   $firewall = true,
-  $monitor = true,
+  # but don't monitor because we typically do that 1 layer up for web services
+  $monitor = false,
 
   # port only used for monitoring
   $port = 80,
