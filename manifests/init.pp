@@ -118,7 +118,7 @@ class dozendserver (
           path => '/usr/bin:/bin:/usr/sbin',
           command => "setenforce 1 && touch ${notifier_dir}/puppet-dozendserver-selinux-fix",
           creates => "${notifier_dir}/puppet-dozendserver-selinux-fix",
-          require => Exec['zend-selinux-fix-stop-do-ports'],
+          require => [Exec['pre-install-disable-selinux'], Exec['zend-selinux-fix-stop-do-ports']],
           before => Service['zend-server-startup'],
         }->
         # make log dir fix permanent to withstand a relabelling
