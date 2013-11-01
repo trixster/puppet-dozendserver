@@ -65,8 +65,8 @@ class dozendserver (
         # temporarily disable SELinux beforehand
         exec { 'pre-install-disable-selinux' :
           path => '/usr/bin:/bin:/usr/sbin',
-          provider => 'shell',
-          command => "bash -c 'setenforce 0'",
+          command => 'setenforce 0',
+          tag => ['service-sensitive'],
           require => Package['sysconfig-pack'],
           before => Package['zend-web-pack'],
         }
@@ -93,6 +93,7 @@ class dozendserver (
           path => '/usr/bin:/bin:/usr/sbin',
           command => '/usr/local/zend/bin/zendctl.sh stop && semanage port -d -p tcp 10083 && semanage port -a -t http_port_t -p tcp 10083 && semanage port -m -t http_port_t -p tcp 10083 && setsebool -P httpd_can_network_connect 1',
           creates => "${notifier_dir}/puppet-dozendserver-selinux-fix",
+          tag => ['service-sensitive'],
           require => Package['zend-web-pack'],
         }
         case $server_version {
@@ -102,6 +103,7 @@ class dozendserver (
               path => '/usr/bin:/bin:/usr/sbin',
               command => 'execstack -c /usr/local/zend/lib/apache2/libphp5.so /usr/local/zend/lib/libssl.so.0.9.8 /usr/lib64/libclntsh.so.11.1 /usr/lib64/libnnz11.so /usr/local/zend/lib/libcrypto.so.0.9.8 /usr/local/zend/lib/debugger/php-5.*.x/ZendDebugger.so /usr/local/zend/lib/php_extensions/curl.so && chcon -R -t httpd_log_t /usr/local/zend/var/log && chcon -R -t httpd_tmp_t /usr/local/zend/tmp && chcon -R -t tmp_t /usr/local/zend/tmp/pagecache /usr/local/zend/tmp/datacache && chcon -t textrel_shlib_t /usr/local/zend/lib/apache2/libphp5.so /usr/lib*/libclntsh.so.11.1 /usr/lib*/libociicus.so /usr/lib*/libnnz11.so',
               creates => "${notifier_dir}/puppet-dozendserver-selinux-fix",
+              tag => ['service-sensitive'],
               require => Exec['zend-selinux-fix-stop-do-ports'],
               before => [Exec['zend-selinux-fix-start'], Service['zend-server-startup']],
             }
@@ -118,6 +120,7 @@ class dozendserver (
           path => '/usr/bin:/bin:/usr/sbin',
           command => "setenforce 1 && touch ${notifier_dir}/puppet-dozendserver-selinux-fix",
           creates => "${notifier_dir}/puppet-dozendserver-selinux-fix",
+          tag => ['service-sensitive'],
           require => [Exec['pre-install-disable-selinux'], Exec['zend-selinux-fix-stop-do-ports']],
           before => Service['zend-server-startup'],
         }->
