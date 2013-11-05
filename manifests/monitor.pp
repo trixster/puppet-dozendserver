@@ -15,14 +15,14 @@ class dozendserver::monitor (
 
   if ($port) {
     # if we've named a port, setup the check against that port
-    @nagios::service { "http:${port}-dozendserver-${::hostname}":
+    @nagios::service { "http:${port}-dozendserver-${::fqdn}":
       check_command => "http_port!${port}",
     }
   }
 
   if ($port_https) {
     # if we've named a secure port, setup the check against that port
-    @nagios::service { "https:${port_https}-dozendserver-${::hostname}":
+    @nagios::service { "https:${port_https}-dozendserver-${::fqdn}":
       check_command => "check_https_nocert",
     }
   }
