@@ -61,7 +61,7 @@ class dozendserver (
         ensure => 'present',
       }
       
-      if ($::selinux) {
+      if (str2bool($::selinux)) {
         # temporarily disable SELinux beforehand
         exec { 'pre-install-disable-selinux' :
           path => '/usr/bin:/bin:/usr/sbin',
@@ -87,7 +87,7 @@ class dozendserver (
         require => File['zend-repo-file'],
       }
       
-      if ($::selinux) {
+      if (str2bool($::selinux)) {
         # stop zendserver, fix then re-enable SELinux
         exec { 'zend-selinux-fix-stop-do-ports' :
           path => '/usr/bin:/bin:/usr/sbin',
@@ -238,10 +238,13 @@ class dozendserver (
     centos, redhat: {
       $apache_conf_command = "sed -i -e 's/Group apache/Group ${group_name}/' ${signatureSed} ${apache::params::conf_dir}/${apache::params::conf_file}"
       $apache_conf_if = "grep -c 'Group apache' ${apache::params::conf_dir}/${apache::params::conf_file}"
+      $apache_member_list = "${user},apache,zend"
     }
     ubuntu, debian: {
       $apache_conf_command = "sed -i -e 's/APACHE_RUN_GROUP=www-data/APACHE_RUN_GROUP=${group_name}/' ${signatureSed} /etc/${apache::params::apache_name}/envvars"
       $apache_conf_if = "grep -c 'APACHE_RUN_GROUP=www-data' /etc/${apache::params::apache_name}/envvars"
+      # ubuntu doesn't have an apache user, only www-data
+      $apache_member_list = "${user},zend"
     }
   }
   exec { 'apache-web-group-hack' :
@@ -254,7 +257,7 @@ class dozendserver (
   # create www-data group and give web/zend access to it
   exec { 'apache-user-group-add' :
     path => '/usr/bin:/usr/sbin',
-    command => "groupadd -f ${group_name} -g 5000 && gpasswd -M ${user},apache,zend ${group_name}",
+    command => "groupadd -f ${group_name} -g 5000 && gpasswd -M ${apache_member_list} ${group_name}",
     before => Service['zend-server-startup'],
   }
 
